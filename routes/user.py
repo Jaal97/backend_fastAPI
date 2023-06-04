@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Response, status
 
 from config.db import collection_name
-from schemas.user import userEntity, usersEntity
-from models.user import User, UserPost
+from schemas.user import usersEntity
+from models.user import User
 
 from passlib.hash import sha256_crypt
 from bson import ObjectId
-# from starlette.status import HTTP_204_NO_CONTENT 
+
 
 user = router = APIRouter()
 
@@ -20,12 +20,12 @@ async def find_all_users():
 
 @user.get('/users/{id}')
 async def find_user(id: str):
-    return usersEntity(collection_name.find_one({"_id": ObjectId(id)}))
+    return usersEntity(collection_name.find({"_id": ObjectId(id)}))
 
 
 #Post
 @user.post('/users')
-async def create_user(user:UserPost):
+async def create_user(user:User):
     new_user = dict(user)
     new_user['password'] = sha256_crypt.encrypt(new_user['password'])
     
