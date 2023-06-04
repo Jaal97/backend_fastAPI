@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter
 
 from config.db import collection_name
 from schemas.user import usersEntity
 from models.user import User
 
 from passlib.hash import sha256_crypt
-from bson import ObjectId
-
+# from bson import ObjectId
+from validate_email import validate_email
 
 user = router = APIRouter()
 
@@ -18,32 +18,36 @@ async def find_all_users():
     return users
 
 
-@user.get('/users/{id}')
-async def find_user(id: str):
-    return usersEntity(collection_name.find({"_id": ObjectId(id)}))
+@user.get('/users/{email}')
+async def find_user(email: str):
+    return usersEntity(collection_name.find({"email" : email}))
 
 
 #Post
 @user.post('/users')
 async def create_user(user:User):
     new_user = dict(user)
-    new_user['password'] = sha256_crypt.encrypt(new_user['password'])
+   
+    is_valid = validate_email(new_user['email'])
     
-    _id = collection_name.insert_one(dict(new_user))
-    return usersEntity(collection_name.find({"_id": _id.inserted_id}))
+    if is_valid:
+        _id = collection_name.insert_one(dict(new_user))
+        return usersEntity(collection_name.find({"_id": _id.inserted_id}))
+    else:
+        return'Email no valido'
     
 
 # Update
-@user.put('/users/{id}')
-async def update_user(id: str, user:User):
-    collection_name.find_one_and_update({"_id": ObjectId(id)}, {
+@user.put('/users/{email}')
+async def update_user(email: str, user:User):
+    collection_name.find_one_and_update({"email": email}, {
         "$set": dict(user)
     })
-    return usersEntity(collection_name.find({"_id": ObjectId(id)}))
+    return usersEntity(collection_name.find({"email": email}))
 
 
 #Delete
-@user.delete('/users/{id}')
-async def delete_user(id: str):
-    collection_name.find_one_and_delete({"_id": ObjectId(id)})
+@user.delete('/users/{email}')
+async def delete_user(email: str):
+    collection_name.find_one_and_delete({"email": email})
     return {"status": "OK"}
